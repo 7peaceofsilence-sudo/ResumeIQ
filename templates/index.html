@@ -1,0 +1,318 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#11101d">
+  <meta name="description" content="ResumeIQ AI-powered resume matching and candidate analysis.">
+  <title>ResumeIQ — Resume Match Analyzer</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="ambient ambient-one"></div>
+  <div class="ambient ambient-two"></div>
+
+  <header class="topbar">
+    <a class="brand" href="/">
+      <span class="brand-mark">R<span>i</span></span>
+      <span>Resume<span class="brand-accent">IQ</span>
+        <small>CAREER INTELLIGENCE</small>
+      </span>
+    </a>
+    <div class="top-status">
+      <span class="status-dot"></span> AI-POWERED ANALYSIS
+    </div>
+  </header>
+
+  <main class="page-shell">
+    <section class="hero">
+      <div class="eyebrow">
+        <span class="eyebrow-line"></span>
+        YOUR NEXT OPPORTUNITY, DECODED
+      </div>
+      <h1>Make your resume<br>work <span>smarter.</span></h1>
+      <p class="hero-copy">
+        Match your experience to the role. Find skill gaps.
+        Make your next application count.
+      </p>
+      <div class="hero-pills">
+        <span>✦ Resume intelligence</span>
+        <span>↗ Skill gap analysis</span>
+        <span>◎ Candidate ranking</span>
+      </div>
+    </section>
+
+    {% if errors %}
+    <section class="alerts" aria-live="polite">
+      {% for error in errors %}
+      <div class="alert">
+        <span>!</span>
+        <div>{{ error }}</div>
+      </div>
+      {% endfor %}
+    </section>
+    {% endif %}
+
+    <form class="workspace"
+          action="{{ url_for('analyze') }}"
+          method="post"
+          enctype="multipart/form-data"
+          id="analyze-form">
+
+      <!-- RESUME FOLDER UPLOAD -->
+      <section class="panel upload-panel">
+        <div class="section-heading">
+          <div>
+            <span class="step">01</span>
+            <h2>Upload resumes</h2>
+          </div>
+          <span class="subtle">PDF or DOCX · up to 200 files</span>
+        </div>
+
+        <label class="dropzone" id="dropzone" for="resumes">
+          <input
+            type="file"
+            id="resumes"
+            name="resumes"
+            accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            webkitdirectory
+            directory
+            multiple
+            required
+          >
+
+          <span class="upload-icon">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M4 15.5v3A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5v-3"/>
+            </svg>
+          </span>
+
+          <strong>Select your resume folder</strong>
+          <span class="drop-copy">
+            Choose a folder containing your resumes
+          </span>
+
+          <span class="file-types">
+            <b>PDF</b>
+            <b>DOCX</b>
+            <span>MAX 100 MB TOTAL</span>
+          </span>
+        </label>
+
+        <div id="file-list" class="file-list" aria-live="polite">
+          <span class="empty-files">No folder selected yet</span>
+        </div>
+
+        <p class="privacy-note">
+          <span>♢</span>
+          Files are processed temporarily and are not saved by this app.
+        </p>
+      </section>
+
+      <!-- JOB DESCRIPTION -->
+      <section class="panel job-panel">
+        <div class="section-heading">
+          <div>
+            <span class="step">02</span>
+            <h2>Job description</h2>
+          </div>
+          <span class="subtle">Required for matching</span>
+        </div>
+
+        <label class="sr-only" for="job_description">
+          Paste job description
+        </label>
+
+        <textarea
+          id="job_description"
+          name="job_description"
+          placeholder="Paste the job description here…
+
+Include responsibilities, required skills, qualifications, and preferred experience for a more meaningful match score."
+          required>{{ job_description or '' }}</textarea>
+
+        <div class="textarea-footer">
+          <span id="char-count">0 characters</span>
+          <span>More detail = better context</span>
+        </div>
+
+        <button type="submit" class="analyze-button" id="submit-button">
+          <span class="button-label">Analyze all resumes</span>
+          <span class="button-arrow">↗</span>
+        </button>
+
+        <p class="disclaimer">
+          Scores are AI-assisted estimates, not hiring decisions.
+          Review candidate information fairly and verify results.
+        </p>
+      </section>
+    </form>
+
+    <!-- ANALYSIS RESULTS -->
+    {% if analyzed %}
+    <section class="results-section" id="results">
+      <div class="results-title">
+        <div>
+          <div class="eyebrow">
+            <span class="eyebrow-line"></span>
+            ANALYSIS COMPLETE
+          </div>
+          <h2>Your candidate <span>overview.</span></h2>
+        </div>
+
+        <div class="result-count">
+          <strong>{{ results|length }}</strong>
+          <span>candidate{% if results|length != 1 %}s{% endif %}<br>analyzed</span>
+        </div>
+      </div>
+
+      {% if results %}
+      <div class="summary-grid">
+        <article class="summary-card">
+          <span class="summary-label">CANDIDATES PROCESSED</span>
+          <strong>{{ results|length }}</strong>
+          <span class="summary-foot">Successfully analyzed</span>
+        </article>
+
+        <article class="summary-card">
+          <span class="summary-label">TOP MATCH</span>
+          <strong>{{ "%.1f"|format(results[0].score) }}<small>%</small></strong>
+          <span class="summary-foot">{{ results[0].name }}</span>
+        </article>
+
+        <article class="summary-card">
+          <span class="summary-label">AVERAGE MATCH</span>
+          <strong>{{ "%.1f"|format((results|sum(attribute='score')) / (results|length)) }}<small>%</small></strong>
+          <span class="summary-foot">Across successful analyses</span>
+        </article>
+      </div>
+
+      <div class="candidate-list">
+        {% for candidate in results %}
+        {% set details = candidate.details %}
+        {% set matched = details.get('matching_skills', []) %}
+        {% set missing = details.get('missing_important_skills', []) %}
+        {% set verdict = details.get('final_verdict', details.get('verdict', '')) %}
+        {% set exp_met = details.get('experience_requirement_met', None) %}
+        {% set suggestions = details.get('improvement_suggestions', []) %}
+
+        <article class="candidate-card">
+          <div class="candidate-main">
+            <div class="rank">#{{ loop.index }}</div>
+
+            <div class="candidate-identity">
+              <h3>{{ candidate.name }}</h3>
+              <p>{{ candidate.filename }}</p>
+            </div>
+
+            <div class="score-block">
+              <strong>{{ "%.1f"|format(candidate.score) }}<small>%</small></strong>
+              <span>match score</span>
+            </div>
+          </div>
+
+          <div class="score-track">
+            <span style="width: {{ candidate.score }}%"></span>
+          </div>
+
+          {% if verdict %}
+          <p class="verdict">{{ verdict }}</p>
+          {% endif %}
+
+          <div class="details-grid">
+            <div class="detail-box">
+              <h4>
+                <span class="mini-icon good">✓</span>
+                Matching skills
+                <span class="count">{{ matched|length if matched is iterable and matched is not string else 0 }}</span>
+              </h4>
+
+              {% if matched is iterable and matched is not string and matched %}
+              <div class="tag-list">
+                {% for skill in matched %}
+                <span class="tag tag-good">{{ skill }}</span>
+                {% endfor %}
+              </div>
+              {% else %}
+              <p class="muted">No matching skills returned.</p>
+              {% endif %}
+            </div>
+
+            <div class="detail-box">
+              <h4>
+                <span class="mini-icon missing">−</span>
+                Important skill gaps
+                <span class="count">{{ missing|length if missing is iterable and missing is not string else 0 }}</span>
+              </h4>
+
+              {% if missing is iterable and missing is not string and missing %}
+              <div class="tag-list">
+                {% for skill in missing %}
+                <span class="tag tag-missing">{{ skill }}</span>
+                {% endfor %}
+              </div>
+              {% else %}
+              <p class="muted">No key gaps reported.</p>
+              {% endif %}
+            </div>
+          </div>
+
+          {% if suggestions and suggestions is iterable and suggestions is not string %}
+          <div class="suggestions">
+            <h4>Suggested improvements</h4>
+            <ul>
+              {% for suggestion in suggestions %}
+              <li>{{ suggestion }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+          {% endif %}
+
+          <div class="candidate-meta">
+            <span>
+              Experience requirement:
+              <b>{{ exp_met if exp_met is not none else 'Not specified' }}</b>
+            </span>
+
+            {% if candidate.experience_years is not none %}
+            <span>
+              Total experience:
+              <b>{{ candidate.experience_years }} years</b>
+            </span>
+            {% endif %}
+          </div>
+        </article>
+        {% endfor %}
+      </div>
+
+      {% else %}
+      <div class="empty-result">
+        <h3>No resumes could be analyzed.</h3>
+        <p>Check the errors above, then try readable PDF or DOCX files.</p>
+      </div>
+      {% endif %}
+    </section>
+    {% endif %}
+
+    <footer>
+      <span class="footer-brand">Resume<span>IQ</span></span>
+      <span>Built for clearer, more informed applications.</span>
+      <span>LOCAL SESSION · PRIVACY MINDED</span>
+    </footer>
+  </main>
+
+  <div class="loading-overlay" id="loading-overlay" aria-hidden="true">
+    <div class="loading-card">
+      <div class="spinner"></div>
+      <h3>Reading between the lines.</h3>
+      <p>
+        Parsing resumes and comparing job requirements.
+        This can take a little while for multiple files.
+      </p>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
